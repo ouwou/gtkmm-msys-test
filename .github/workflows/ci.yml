@@ -1,0 +1,32 @@
+name: CI
+
+on: [push]
+
+jobs:
+  windows:
+    name: windows-${{ matrix.buildtype }}
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        buildtype: [Debug, RelWithDebInfo, MinSizeRel]
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: "Setup MSYS"
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          install: >-
+            git
+            make
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+
+      - name: "Build"
+        run: |
+          cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=${{ matrix.buildtype }}
+          cmake --build build
