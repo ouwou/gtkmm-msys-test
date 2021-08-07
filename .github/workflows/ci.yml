@@ -15,6 +15,9 @@ jobs:
         shell: msys2 {0}
 
     steps:
+      - name: "Checkout"
+        uses: actions/checkout@v1
+
       - name: "Setup MSYS"
         uses: msys2/setup-msys2@v2
         with:
@@ -25,8 +28,25 @@ jobs:
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-gtkmm3
 
       - name: "Build"
         run: |
-          cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=${{ matrix.buildtype }}
-          cmake --build build
+          mkdir build && cd build
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.buildtype }} ..
+          ninja
+
+      - name: "Setup Artifact"
+        run: |
+          mkdir build/artifactdir
+          cd build
+          ls -la
+          cp *.exe artifactdir
+          cd ..
+          cat "ci/deps.txt" | sed 's/\r$//' | xargs -I % cp /mingw64% build/artifactdir
+
+      - name: "Upload Build"
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-windows-${{ matrix.buildtype }}
+          path: build/artifactdir
